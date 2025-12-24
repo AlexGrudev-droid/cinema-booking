@@ -26,6 +26,15 @@ with app.app_context():
         os.makedirs('db')
     db.create_all()
 
+    # Создание администратора, если его нет
+    from werkzeug.security import generate_password_hash
+    from cinema.models import User
+    admin = User.query.filter_by(login='admin').first()
+    if not admin:
+        admin = User(name='Admin', login='admin', password=generate_password_hash('Admin123!'), role='admin')
+        db.session.add(admin)
+        db.session.commit()
+
 # --- Редирект с корня на логин ---
 @app.route('/')
 def index():

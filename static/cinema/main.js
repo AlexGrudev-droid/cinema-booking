@@ -9,7 +9,6 @@ async function register() {
         return;
     }
 
-    // Проверка логина и пароля (латиница, цифры, знаки)
     const pattern = /^[A-Za-z0-9!@#\$%\^&\*\(\)_\-\+=]+$/;
     if(!pattern.test(login)){
         document.getElementById('msg').innerText = 'Логин содержит недопустимые символы!';
@@ -53,7 +52,7 @@ async function login() {
     }
 }
 
-// --- Выход пользователя ---
+// --- Выход ---
 async function logout() {
     await fetch('/api/logout', {method:'POST'});
     sessionStorage.clear();
@@ -72,7 +71,7 @@ async function deleteAccount() {
     }
 }
 
-// --- Загрузка списка сеансов ---
+// --- Загрузка сеансов ---
 async function loadSessions() {
     const res = await fetch('/api/sessions');
     const sessions = await res.json();
