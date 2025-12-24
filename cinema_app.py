@@ -26,7 +26,7 @@ with app.app_context():
         os.makedirs('db')
     db.create_all()
 
-    # Создание администратора, если его нет
+    # Создание администратора
     from werkzeug.security import generate_password_hash
     from cinema.models import User
     admin = User.query.filter_by(login='admin').first()
@@ -57,6 +57,5 @@ def seats_page():
         return redirect(url_for('login_page'))
     return render_template('cinema/seats.html')
 
-# --- Запуск локально ---
 if __name__ == '__main__':
     app.run(debug=True)

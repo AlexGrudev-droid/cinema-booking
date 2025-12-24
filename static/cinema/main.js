@@ -1,4 +1,4 @@
-// --- Регистрация пользователя ---
+// --- Регистрация ---
 async function register() {
     const name = document.getElementById('name').value.trim();
     const login = document.getElementById('login').value.trim();
@@ -28,7 +28,7 @@ async function register() {
     document.getElementById('msg').innerText = data.message || data.error;
 }
 
-// --- Логин пользователя ---
+// --- Логин ---
 async function login() {
     const loginVal = document.getElementById('login').value.trim();
     const password = document.getElementById('password').value.trim();
@@ -131,7 +131,7 @@ async function deleteSession(id){
     loadSessions();
 }
 
-// --- Загрузка мест для сеанса ---
+// --- Загрузка мест ---
 async function loadSeats() {
     const currentSessionId = sessionStorage.getItem('sessionId');
     if(!currentSessionId) return;
@@ -141,30 +141,29 @@ async function loadSeats() {
     const container = document.getElementById('seats-container');
     container.innerHTML = '';
 
+    const role = sessionStorage.getItem('role');
+    const userName = sessionStorage.getItem('name');
+
     seats.forEach(seat => {
         const div = document.createElement('div');
         div.classList.add('seat');
         div.innerText = seat.number;
 
         if(seat.user){
-            if(seat.user === sessionStorage.getItem('name')) div.classList.add('own');
+            div.title = seat.user; // имя, кто занял место
+            if(seat.user === userName) div.classList.add('own');
             else div.classList.add('booked');
-            div.title = seat.user;
         }
 
         div.onclick = async () => {
-            if(seat.user === sessionStorage.getItem('name')){
-                await fetch('/api/seats/unbook', {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({seat_id: seat.id})
-                });
+            if(seat.user === userName){
+                await fetch('/api/seats/unbook', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
             } else if(!seat.user){
-                await fetch('/api/seats/book', {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({seat_id: seat.id})
-                });
+                await fetch('/api/seats/book', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
+            } else if(role === 'admin'){
+                if(confirm(`Снять бронь с места ${seat.number}, занятого ${seat.user}?`)){
+                    await fetch('/api/seats/unbook', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
+                }
             } else {
                 alert('Место занято');
             }

@@ -11,7 +11,6 @@ def is_valid_login(login):
 def is_valid_password(password):
     return re.fullmatch(r'[A-Za-z0-9!@#\$%\^&\*\(\)_\-\+=]+', password)
 
-# --- Регистрация ---
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.json
@@ -33,7 +32,6 @@ def register():
     db.session.commit()
     return jsonify({'message':'Регистрация успешна'}), 201
 
-# --- Логин ---
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -46,13 +44,11 @@ def login():
         return jsonify({'message':'Вход успешен', 'role': user.role, 'name': user.name}), 200
     return jsonify({'error':'Неверный логин или пароль'}), 401
 
-# --- Выход ---
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
     session.clear()
     return jsonify({'message':'Выход выполнен'}), 200
 
-# --- Удаление аккаунта ---
 @auth_bp.route('/delete_account', methods=['POST'])
 def delete_account():
     user_id = session.get('user_id')
@@ -62,7 +58,6 @@ def delete_account():
     if not user:
         return jsonify({'error':'Пользователь не найден'}), 404
 
-    # Снимаем бронь пользователя со всех мест
     from cinema.models import Seat
     seats = Seat.query.filter_by(user_id=user.id).all()
     for seat in seats:
