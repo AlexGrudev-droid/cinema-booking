@@ -11,7 +11,7 @@ body {
     margin: 0;
     min-height: 100vh;
     box-sizing: border-box;
-    padding-bottom: 60px; /* Отступ для футера */
+    padding-bottom: 80px; /* Отступ для футера */
 }
 h1 { text-align: center; margin-top: 0; }
 #logout { 
@@ -27,7 +27,7 @@ h1 { text-align: center; margin-top: 0; }
 #logout:hover { background: #a71d2a; }
 table { 
     width: 80%; 
-    margin: 20px auto 40px auto; /* Увеличен нижний отступ */
+    margin: 20px auto 40px auto; 
     border-collapse: collapse; 
     background: white; 
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -64,13 +64,13 @@ button:hover { background: #0056b3; }
     font-size: 14px;
 }
 
-/* Стили для футера */
+/* Футер */
 footer {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 40px; /* Небольшая высота */
+    height: 40px;
     background-color: #333;
     color: white;
     display: flex;
@@ -80,11 +80,23 @@ footer {
     box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
     z-index: 1000;
 }
+#delete-account {
+    float: left;
+    padding: 10px 20px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+#delete-account:hover { background: #a71d2a; }
 </style>
 </head>
 <body>
 <h1>Список сеансов</h1>
 <button id="logout" onclick="logout()">Выход</button>
+<button id="delete-account" onclick="deleteAccount()">Удалить аккаунт</button>
 
 <div id="admin-controls" style="display:none;">
     <input type="text" id="movie" placeholder="Фильм">
@@ -109,6 +121,17 @@ async function logout() {
     await fetch('/api/logout', {method:'POST'});
     sessionStorage.clear();
     window.location.href='/login';
+}
+
+async function deleteAccount() {
+    if(!confirm('Вы уверены, что хотите удалить свой аккаунт? Эта операция необратима!')) return;
+    const res = await fetch('/api/delete_account', {method:'POST'});
+    const data = await res.json();
+    alert(data.message || data.error);
+    if(res.ok){
+        sessionStorage.clear();
+        window.location.href='/login';
+    }
 }
 
 async function loadSessions() {
@@ -162,8 +185,8 @@ async function deleteSession(id){
 
 loadSessions();
 </script>
-</body>
 <footer>
     Грудев Александр Евгеньевич, ФБИ-32
 </footer>
+</body>
 </html>

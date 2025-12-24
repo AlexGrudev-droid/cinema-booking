@@ -1,8 +1,24 @@
-// --- Регистрация ---
+// --- Регистрация пользователя ---
 async function register() {
-    const name = document.getElementById('name').value;
-    const login = document.getElementById('login').value;
-    const password = document.getElementById('password').value;
+    const name = document.getElementById('name').value.trim();
+    const login = document.getElementById('login').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if(!name || !login || !password){
+        document.getElementById('msg').innerText = 'Все поля обязательны!';
+        return;
+    }
+
+    // Проверка логина и пароля (латиница, цифры, знаки)
+    const pattern = /^[A-Za-z0-9!@#\$%\^&\*\(\)_\-\+=]+$/;
+    if(!pattern.test(login)){
+        document.getElementById('msg').innerText = 'Логин содержит недопустимые символы!';
+        return;
+    }
+    if(!pattern.test(password)){
+        document.getElementById('msg').innerText = 'Пароль содержит недопустимые символы!';
+        return;
+    }
 
     const res = await fetch('/api/register', {
         method:'POST',
@@ -13,10 +29,15 @@ async function register() {
     document.getElementById('msg').innerText = data.message || data.error;
 }
 
-// --- Логин ---
+// --- Логин пользователя ---
 async function login() {
-    const loginVal = document.getElementById('login').value;
-    const password = document.getElementById('password').value;
+    const loginVal = document.getElementById('login').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if(!loginVal || !password){
+        document.getElementById('msg').innerText = 'Логин и пароль обязательны!';
+        return;
+    }
 
     const res = await fetch('/api/login', {
         method:'POST',
@@ -26,15 +47,32 @@ async function login() {
     const data = await res.json();
     document.getElementById('msg').innerText = data.message || data.error;
     if(res.ok){
-        // Сохраняем имя и роль в sessionStorage
         sessionStorage.setItem('role', data.role);
         sessionStorage.setItem('name', data.name);
-        // Переход на страницу сеансов
         window.location.href='/sessions';
     }
 }
 
-// --- Сеансы ---
+// --- Выход пользователя ---
+async function logout() {
+    await fetch('/api/logout', {method:'POST'});
+    sessionStorage.clear();
+    window.location.href='/login';
+}
+
+// --- Удаление аккаунта ---
+async function deleteAccount() {
+    if(!confirm('Вы уверены, что хотите удалить свой аккаунт? Эта операция необратима!')) return;
+    const res = await fetch('/api/delete_account', {method:'POST'});
+    const data = await res.json();
+    alert(data.message || data.error);
+    if(res.ok){
+        sessionStorage.clear();
+        window.location.href='/login';
+    }
+}
+
+// --- Загрузка списка сеансов ---
 async function loadSessions() {
     const res = await fetch('/api/sessions');
     const sessions = await res.json();
@@ -51,7 +89,7 @@ async function loadSessions() {
             <td>${s.time}</td>
             <td>
                 <button onclick="openSeats(${s.id})" ${s.is_past?'disabled':''}>Посмотреть места</button>
-                ${role==='admin' ? `<button onclick="deleteSession(${s.id})">Удалить</button>` : ''}
+                ${role==='admin'?`<button onclick="deleteSession(${s.id})">Удалить</button>`:''}
             </td>
         `;
         tbody.appendChild(tr);
@@ -70,10 +108,15 @@ async function createSession() {
     const date = document.getElementById('date').value;
     const time = document.getElementById('time').value;
 
-    const res = await fetch('/api/sessions', {
+    if(!movie || !date || !time){
+        alert('Заполните все поля для создания сеанса');
+        return;
+    }
+
+    const res = await fetch('/api/sessions',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({movie, date, time})
+        body:JSON.stringify({movie, date, time})
     });
     const data = await res.json();
     alert(data.message || data.error);
@@ -89,14 +132,7 @@ async function deleteSession(id){
     loadSessions();
 }
 
-// --- Выход ---
-async function logout() {
-    await fetch('/api/logout', {method:'POST'});
-    sessionStorage.clear();
-    window.location.href='/login';
-}
-
-// --- Загрузка мест на странице seats ---
+// --- Загрузка мест для сеанса ---
 async function loadSeats() {
     const currentSessionId = sessionStorage.getItem('sessionId');
     if(!currentSessionId) return;
@@ -119,10 +155,20 @@ async function loadSeats() {
 
         div.onclick = async () => {
             if(seat.user === sessionStorage.getItem('name')){
-                await fetch('/api/seats/unbook', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
+                await fetch('/api/seats/unbook', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({seat_id: seat.id})
+                });
             } else if(!seat.user){
-                await fetch('/api/seats/book', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
-            } else alert('Место занято');
+                await fetch('/api/seats/book', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({seat_id: seat.id})
+                });
+            } else {
+                alert('Место занято');
+            }
             loadSeats();
         };
 
@@ -130,7 +176,7 @@ async function loadSeats() {
     });
 }
 
-// --- Автозагрузка ---
+// --- Автозагрузка страниц ---
 if(window.location.pathname.endsWith('sessions.html')){
     loadSessions();
 }
