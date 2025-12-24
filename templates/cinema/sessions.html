@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Кинотеатр — Сеансы</title>
+<style>
+body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+h1 { text-align: center; }
+#logout { float: right; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius:5px; cursor:pointer; }
+#logout:hover { background:#a71d2a; }
+table { width: 80%; margin: 20px auto; border-collapse: collapse; background: white; box-shadow:0 0 10px rgba(0,0,0,0.1);}
+th, td { padding:12px; border-bottom:1px solid #ddd; text-align:center; }
+tr:hover { background-color: #f1f1f1; }
+button { padding: 5px 10px; background:#007bff; color:white; border:none; border-radius:5px; cursor:pointer; }
+button:hover { background:#0056b3; }
+#admin-controls { text-align:center; margin-bottom:20px; }
+#admin-controls input { padding:5px; margin:5px; }
+</style>
+</head>
+<body>
+<h1>Список сеансов</h1>
+<button id="logout" onclick="logout()">Выход</button>
+
+<div id="admin-controls" style="display:none;">
+    <input type="text" id="movie" placeholder="Фильм">
+    <input type="date" id="date">
+    <input type="time" id="time">
+    <button onclick="createSession()">Создать сеанс</button>
+</div>
+
+<table id="sessions-table">
+<thead>
+<tr><th>Фильм</th><th>Дата</th><th>Время</th><th>Действие</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<script src="/static/cinema/main.js"></script>
+<script>
+const role = sessionStorage.getItem('role');
+if(role === 'admin') document.getElementById('admin-controls').style.display='block';
+
+async function logout() {
+    await fetch('/api/logout', {method:'POST'});
+    sessionStorage.clear();
+    window.location.href='/templates/cinema/login.html';
+}
+
+async function loadSessions() {
+    const res = await fetch('/api/sessions');
+    const sessions = await res.json();
+    const tbody = document.querySelector('#sessions-table tbody');
+    tbody.innerHTML = '';
+
+    sessions.forEach(s=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`
+            <td>${s.movie}</td>
+            <td>${s.date}</td>
+            <td>${s.time}</td>
+            <td>
+                <button onclick="openSeats(${s.id})" ${s.is_past?'disabled':''}>Посмотреть места</button>
+                ${role==='admin'?`<button onclick="deleteSession(${s.id})">Удалить</button>`:''}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openSeats(sessionId) {
+    sessionStorage.setItem('sessionId', sessionId);
+    window.location.href='/templates/cinema/seats.html';
+}
+
+async function createSession() {
+    const movie = document.getElementById('movie').value;
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
+
+    const res = await fetch('/api/sessions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({movie,date,time})
+    });
+    const data = await res.json();
+    alert(data.message || data.error);
+    loadSessions();
+}
+
+async function deleteSession(id){
+    if(!confirm('Удалить сеанс?')) return;
+    const res = await fetch(`/api/sessions/${id}`, {method:'DELETE'});
+    const data = await res.json();
+    alert(data.message || data.error);
+    loadSessions();
+}
+
+// автозагрузка
+loadSessions();
+</script>
+</body>
+</html>
