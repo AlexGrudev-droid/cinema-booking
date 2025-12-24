@@ -1,4 +1,5 @@
 from flask import Flask
+from flask import render_template, session
 from cinema.models import db
 from cinema.auth import auth_bp
 from cinema.sessions import sessions_bp
@@ -10,7 +11,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/grudevalex/cinema-booki
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'secret-key-for-session'
 
-from flask import render_template, session
+
+# Инициализация БД
+db.init_app(app)
+
+# Подключение Blueprints
+app.register_blueprint(auth_bp, url_prefix='/api')
+app.register_blueprint(sessions_bp, url_prefix='/api')
+app.register_blueprint(seats_bp, url_prefix='/api')
 
 # --- Маршрут для логина / регистрации ---
 @app.route('/login')
@@ -33,13 +41,6 @@ def seats_page():
         return render_template('cinema/login.html')
     return render_template('cinema/seats.html')
 
-# Инициализация БД
-db.init_app(app)
-
-# Подключение Blueprints
-app.register_blueprint(auth_bp, url_prefix='/api')
-app.register_blueprint(sessions_bp, url_prefix='/api')
-app.register_blueprint(seats_bp, url_prefix='/api')
 
 # Создание базы и таблиц
 with app.app_context():
