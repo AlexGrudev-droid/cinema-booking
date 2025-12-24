@@ -148,3 +148,4 @@ async function login() {
         window.location.href='/templates/cinema/sessions.html';
     }
 }
+
