@@ -1,5 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Кинотеатр — Места</title>
+<style>
+body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
+h1 { text-align: center; }
+.seats { display: grid; grid-template-columns: repeat(10, 50px); gap: 10px; justify-content: center; }
+.seat { width: 50px; height: 50px; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: #28a745; color: white; cursor: pointer; }
+.seat.booked { background: #dc3545; cursor: not-allowed; }
+.seat.own { background: #ffc107; }
+#back { margin: 20px; padding:10px 15px; background:#007bff; color:white; border:none; border-radius:5px; cursor:pointer;}
+#back:hover { background:#0056b3; }
+</style>
+</head>
+<body>
+<h1>Места на сеанс</h1>
+<button id="back" onclick="window.location.href='/sessions'">Назад к сеансам</button>
 <div class="seats" id="seats-container"></div>
+<script src="/static/cinema/main.js"></script>
 <script>
+const currentSessionId = sessionStorage.getItem('sessionId');
+
 async function loadSeats() {
     const res = await fetch(`/api/sessions/${currentSessionId}/seats`);
     const seats = await res.json();
@@ -10,26 +32,18 @@ async function loadSeats() {
         const div = document.createElement('div');
         div.classList.add('seat');
         div.innerText = seat.number;
-        
-        if (seat.user) {
-            if (seat.user === sessionStorage.getItem('name')) div.classList.add('own');
+
+        if(seat.user){
+            if(seat.user === sessionStorage.getItem('name')) div.classList.add('own');
             else div.classList.add('booked');
             div.title = seat.user;
         }
 
         div.onclick = async () => {
-            if (seat.user === sessionStorage.getItem('name')) {
-                await fetch('/api/seats/unbook', {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({seat_id: seat.id})
-                });
-            } else if (!seat.user) {
-                await fetch('/api/seats/book', {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({seat_id: seat.id})
-                });
+            if(seat.user === sessionStorage.getItem('name')){
+                await fetch('/api/seats/unbook', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
+            } else if(!seat.user){
+                await fetch('/api/seats/book', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
             } else alert('Место занято');
             loadSeats();
         };
@@ -37,4 +51,8 @@ async function loadSeats() {
         container.appendChild(div);
     });
 }
+
+loadSeats();
 </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session
+from flask import Flask, render_template, session, redirect, url_for
 from cinema.models import db
 from cinema.auth import auth_bp
 from cinema.sessions import sessions_bp
@@ -20,11 +20,16 @@ app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(sessions_bp, url_prefix='/api')
 app.register_blueprint(seats_bp, url_prefix='/api')
 
-# --- Создание базы и таблиц (если не существует) ---
+# --- Создание базы и таблиц ---
 with app.app_context():
     if not os.path.exists('db'):
         os.makedirs('db')
     db.create_all()
+
+# --- Редирект с корня на логин ---
+@app.route('/')
+def index():
+    return redirect(url_for('login_page'))
 
 # --- Маршруты фронтенда ---
 @app.route('/login')
@@ -34,15 +39,15 @@ def login_page():
 @app.route('/sessions')
 def sessions_page():
     if 'user_id' not in session:
-        return render_template('cinema/login.html')
+        return redirect(url_for('login_page'))
     return render_template('cinema/sessions.html')
 
 @app.route('/seats')
 def seats_page():
     if 'user_id' not in session:
-        return render_template('cinema/login.html')
+        return redirect(url_for('login_page'))
     return render_template('cinema/seats.html')
 
-# --- Запуск локально (для отладки) ---
+# --- Запуск локально ---
 if __name__ == '__main__':
     app.run(debug=True)

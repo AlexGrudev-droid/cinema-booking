@@ -1,60 +1,37 @@
+// --- Регистрация ---
 async function register() {
     const name = document.getElementById('name').value;
     const login = document.getElementById('login').value;
     const password = document.getElementById('password').value;
 
     const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
         body: JSON.stringify({name, login, password})
     });
     const data = await res.json();
     document.getElementById('msg').innerText = data.message || data.error;
 }
 
-async function login() {
-    const login = document.getElementById('login').value;
-    const password = document.getElementById('password').value;
-
-    const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({login, password})
-    });
-    const data = await res.json();
-    document.getElementById('msg').innerText = data.message || data.error;
-    if (res.ok) window.location.href = '/templates/cinema/sessions.html';
-}
-
-let currentSessionId = null;
-
-// --- Авторизация и регистрация ---
-async function register() {
-    const name = document.getElementById('name').value;
-    const login = document.getElementById('login').value;
-    const password = document.getElementById('password').value;
-
-    const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({name, login, password})
-    });
-    const data = await res.json();
-    document.getElementById('msg').innerText = data.message || data.error;
-}
-
+// --- Логин ---
 async function login() {
     const loginVal = document.getElementById('login').value;
     const password = document.getElementById('password').value;
 
     const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
         body: JSON.stringify({login: loginVal, password})
     });
     const data = await res.json();
     document.getElementById('msg').innerText = data.message || data.error;
-    if (res.ok) window.location.href = '/templates/cinema/sessions.html';
+    if(res.ok){
+        // Сохраняем имя и роль в sessionStorage
+        sessionStorage.setItem('role', data.role);
+        sessionStorage.setItem('name', data.name);
+        // Переход на страницу сеансов
+        window.location.href='/sessions';
+    }
 }
 
 // --- Сеансы ---
@@ -64,6 +41,8 @@ async function loadSessions() {
     const tbody = document.querySelector('#sessions-table tbody');
     tbody.innerHTML = '';
 
+    const role = sessionStorage.getItem('role');
+
     sessions.forEach(s => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -71,23 +50,57 @@ async function loadSessions() {
             <td>${s.date}</td>
             <td>${s.time}</td>
             <td>
-                <button onclick="openSeats(${s.id})" ${s.is_past ? 'disabled' : ''}>
-                    Посмотреть места
-                </button>
+                <button onclick="openSeats(${s.id})" ${s.is_past?'disabled':''}>Посмотреть места</button>
+                ${role==='admin' ? `<button onclick="deleteSession(${s.id})">Удалить</button>` : ''}
             </td>
         `;
         tbody.appendChild(tr);
     });
 }
 
+// --- Переход к местам ---
 function openSeats(sessionId) {
-    currentSessionId = sessionId;
-    window.location.href = '/templates/cinema/seats.html';
+    sessionStorage.setItem('sessionId', sessionId);
+    window.location.href='/seats';
 }
 
-// --- Места ---
+// --- Создание сеанса (админ) ---
+async function createSession() {
+    const movie = document.getElementById('movie').value;
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
+
+    const res = await fetch('/api/sessions', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({movie, date, time})
+    });
+    const data = await res.json();
+    alert(data.message || data.error);
+    loadSessions();
+}
+
+// --- Удаление сеанса (админ) ---
+async function deleteSession(id){
+    if(!confirm('Удалить сеанс?')) return;
+    const res = await fetch(`/api/sessions/${id}`, {method:'DELETE'});
+    const data = await res.json();
+    alert(data.message || data.error);
+    loadSessions();
+}
+
+// --- Выход ---
+async function logout() {
+    await fetch('/api/logout', {method:'POST'});
+    sessionStorage.clear();
+    window.location.href='/login';
+}
+
+// --- Загрузка мест на странице seats ---
 async function loadSeats() {
-    if (!currentSessionId) return;
+    const currentSessionId = sessionStorage.getItem('sessionId');
+    if(!currentSessionId) return;
+
     const res = await fetch(`/api/sessions/${currentSessionId}/seats`);
     const seats = await res.json();
     const container = document.getElementById('seats-container');
@@ -98,54 +111,29 @@ async function loadSeats() {
         div.classList.add('seat');
         div.innerText = seat.number;
 
-        if (seat.user) div.classList.add(seat.user === 'Вы' ? 'own' : 'booked');
-        div.onclick = () => toggleSeat(seat);
+        if(seat.user){
+            if(seat.user === sessionStorage.getItem('name')) div.classList.add('own');
+            else div.classList.add('booked');
+            div.title = seat.user;
+        }
+
+        div.onclick = async () => {
+            if(seat.user === sessionStorage.getItem('name')){
+                await fetch('/api/seats/unbook', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
+            } else if(!seat.user){
+                await fetch('/api/seats/book', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({seat_id: seat.id})});
+            } else alert('Место занято');
+            loadSeats();
+        };
+
         container.appendChild(div);
     });
 }
 
-async function toggleSeat(seat) {
-    if (seat.user === 'Вы') {
-        await fetch('/api/seats/unbook', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({seat_id: seat.id})
-        });
-    } else if (!seat.user) {
-        await fetch('/api/seats/book', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({seat_id: seat.id})
-        });
-    } else {
-        alert('Место занято другим пользователем');
-    }
-    loadSeats();
-}
-
 // --- Автозагрузка ---
-if (window.location.pathname.endsWith('sessions.html')) {
+if(window.location.pathname.endsWith('sessions.html')){
     loadSessions();
 }
-if (window.location.pathname.endsWith('seats.html')) {
+if(window.location.pathname.endsWith('seats.html')){
     loadSeats();
 }
-
-async function login() {
-    const loginVal = document.getElementById('login').value;
-    const password = document.getElementById('password').value;
-
-    const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({login: loginVal, password})
-    });
-    const data = await res.json();
-    document.getElementById('msg').innerText = data.message || data.error;
-    if(res.ok){
-        sessionStorage.setItem('role', data.role);
-        sessionStorage.setItem('name', data.name);
-        window.location.href='/templates/cinema/sessions.html';
-    }
-}
-
