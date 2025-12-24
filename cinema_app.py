@@ -10,6 +10,29 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/grudevalex/cinema-booki
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'secret-key-for-session'
 
+from flask import render_template, session
+
+# --- Маршрут для логина / регистрации ---
+@app.route('/login')
+def login_page():
+    return render_template('cinema/login.html')
+
+# --- Маршрут для списка сеансов ---
+@app.route('/sessions')
+def sessions_page():
+    # Проверяем авторизацию
+    if 'user_id' not in session:
+        return render_template('cinema/login.html')
+    return render_template('cinema/sessions.html')
+
+# --- Маршрут для просмотра мест на сеанс ---
+@app.route('/seats')
+def seats_page():
+    # Проверяем авторизацию
+    if 'user_id' not in session:
+        return render_template('cinema/login.html')
+    return render_template('cinema/seats.html')
+
 # Инициализация БД
 db.init_app(app)
 
