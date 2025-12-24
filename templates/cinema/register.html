@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Кинотеатр — Вход</title>
+<title>Кинотеатр — Регистрация</title>
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -30,12 +30,12 @@ input {
 button {
     width: 100%;
     padding: 10px;
-    background: #007bff;
+    background: #28a745;
     color: white;
     border: none;
     border-radius: 5px;
 }
-button:hover { background: #0056b3; cursor: pointer; }
+button:hover { background: #1e7e34; cursor: pointer; }
 .link {
     text-align: center;
     margin-top: 10px;
@@ -63,13 +63,14 @@ footer {
 
 <body>
 <div class="box">
-    <h2>Вход</h2>
+    <h2>Регистрация</h2>
+    <input type="text" id="name" placeholder="ФИО">
     <input type="text" id="login" placeholder="Логин">
     <input type="password" id="password" placeholder="Пароль">
-    <button onclick="login()">Войти</button>
+    <button onclick="register()">Зарегистрироваться</button>
 
     <div class="link">
-        Нет аккаунта? <a href="/register">Регистрация</a>
+        Уже есть аккаунт? <a href="/login">Войти</a>
     </div>
 
     <div class="message" id="msg"></div>
